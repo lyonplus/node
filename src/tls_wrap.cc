@@ -63,15 +63,10 @@ TLSCallbacks::TLSCallbacks(Environment* env,
                            WrapCallbacks* old,
 						   bool isstream)
     : SSLWrap<TLSCallbacks>(env, Unwrap<SecureContext>(sc), kind),
-<<<<<<< HEAD
-      StreamWrapCallbacks(old),
+      WrapCallbacks(old),
       AsyncWrap(env,
                 env->tls_wrap_constructor_function()->NewInstance(),
                 AsyncWrap::PROVIDER_TLSWRAP),
-=======
-      WrapCallbacks(old),
-      AsyncWrap(env, env->tls_wrap_constructor_function()->NewInstance()),
->>>>>>> a963b2a... Add DTLS support
       sc_(Unwrap<SecureContext>(sc)),
       sc_handle_(env->isolate(), sc),
       enc_in_(NULL),
@@ -81,25 +76,17 @@ TLSCallbacks::TLSCallbacks(Environment* env,
       started_(false),
       established_(false),
       shutdown_(false),
-<<<<<<< HEAD
       error_(NULL),
       cycle_depth_(0),
-      eof_(false) {
-  node::Wrap(object(), this);
-  MakeWeak(this);
-
-  // Initialize queue for clearIn writes
-  QUEUE_INIT(&write_item_queue_);
-  QUEUE_INIT(&pending_write_items_);
-=======
+      eof_(false),
 	  isstream_(isstream)
 {
   node::Wrap<TLSCallbacks>(object(), this);
 
   // Initialize queue for clearIn writes
   QUEUE_INIT(&write_item_queue_);
+  QUEUE_INIT(&pending_write_items_);
   QUEUE_INIT(&send_item_queue_);
->>>>>>> a963b2a... Add DTLS support
 
   // We've our own session callbacks
   SSL_CTX_sess_set_get_cb(sc_->ctx_, SSLWrap<TLSCallbacks>::GetSessionCallback);
@@ -247,22 +234,22 @@ void TLSCallbacks::Wrap(const FunctionCallbackInfo<Value>& args) {
           env->tcp_constructor_template()->HasInstance(stream)) {                
         TCPWrap* const wrap = Unwrap<TCPWrap>(stream);                                   
 		callbacks = new TLSCallbacks(env, kind, sc, wrap->callbacks(), true);
-		wrap->OverrideCallbacks(callbacks);		
+		wrap->OverrideCallbacks(callbacks, true);		
       } else if (env->udp_constructor_template().IsEmpty() == false &&        
                  env->udp_constructor_template()->HasInstance(stream)) {         
         UDPWrap* const wrap = Unwrap<UDPWrap>(stream);                           
 		callbacks = new TLSCallbacks(env, kind, sc, wrap->callbacks(), false);
- 		wrap->OverrideCallbacks(callbacks);
+ 		wrap->OverrideCallbacks(callbacks, true);
       } else if (env->tty_constructor_template().IsEmpty() == false &&        
                  env->tty_constructor_template()->HasInstance(stream)) {         
         TTYWrap* const wrap = Unwrap<TTYWrap>(stream);                           
 		callbacks = new TLSCallbacks(env, kind, sc, wrap->callbacks(), true);
-		wrap->OverrideCallbacks(callbacks);
+		wrap->OverrideCallbacks(callbacks, true);
       } else if (env->pipe_constructor_template().IsEmpty() == false &&       
                  env->pipe_constructor_template()->HasInstance(stream)) {        
         PipeWrap* const wrap = Unwrap<PipeWrap>(stream);                         
 		callbacks = new TLSCallbacks(env, kind, sc, wrap->callbacks(), true);
-		wrap->OverrideCallbacks(callbacks);
+		wrap->OverrideCallbacks(callbacks, true);
       }
 
   /*
@@ -290,7 +277,8 @@ void TLSCallbacks::Receive(const FunctionCallbackInfo<Value>& args) {
   size_t len = Buffer::Length(args[0]);
 
   uv_buf_t buf;
-  uv_stream_t* stream = wrap->wrap()->stream();
+  // FIXME: do we need to check whether it is a StreamWrap?
+  uv_stream_t* stream = reinterpret_cast<StreamWrap*>(wrap->wrap())->stream();
 
   // Copy given buffer entirely or partiall if handle becomes closed
   while (len > 0 && !uv_is_closing(reinterpret_cast<uv_handle_t*>(stream))) {
@@ -431,14 +419,7 @@ void TLSCallbacks::EncOutHandleCb(uv_udp_send_t* req, int status) {
 	EncOutCb(static_cast<TLSCallbacks*>(req->data), status);  
 }
 
-<<<<<<< HEAD
-void TLSCallbacks::EncOutCb(uv_write_t* req, int status) {
-  TLSCallbacks* callbacks = static_cast<TLSCallbacks*>(req->data);
-=======
 void TLSCallbacks::EncOutCb(TLSCallbacks* callbacks, int status) {
-  Environment* env = callbacks->env();
->>>>>>> a963b2a... Add DTLS support
-
   // Handle error
   if (status) {
     // Ignore errors after shutdown
@@ -451,9 +432,7 @@ void TLSCallbacks::EncOutCb(TLSCallbacks* callbacks, int status) {
   }
 
   // Commit
-  if (callbacks->enc_out_) {
-	NodeBIO::FromBIO(callbacks->enc_out_)->Read(NULL, callbacks->write_size_);
-  }
+  NodeBIO::FromBIO(callbacks->enc_out_)->Read(NULL, callbacks->write_size_);
 
   // Try writing more data
   callbacks->write_size_ = 0;
@@ -544,28 +523,11 @@ void TLSCallbacks::ClearOut(const ExtraInfo * extraInfo) {
 	// Depending of a stream or a dgram (invoke onread or onmessage)
 	//
     if (read > 0) {
-<<<<<<< HEAD
-      Local<Value> argv[] = {
-        Integer::New(env()->isolate(), read),
-        Buffer::New(env(), out, read)
-      };
-      wrap()->MakeCallback(env()->onread_string(), ARRAY_SIZE(argv), argv);
-    }
-  } while (read > 0);
-
-  int flags = SSL_get_shutdown(ssl_);
-  if (!eof_ && flags & SSL_RECEIVED_SHUTDOWN) {
-    eof_ = true;
-    Local<Value> arg = Integer::New(env()->isolate(), UV_EOF);
-    wrap()->MakeCallback(env()->onread_string(), 1, &arg);
-  }
-
-=======
 
 		if (extraInfo) {
 			Local<Object> wrap_obj = wrap()->object();
 			Local<Value> argv[] = {
-				Integer::New(read, node_isolate),
+				Integer::New(env()->isolate(), read),
 				wrap_obj,
 				Undefined(env()->isolate()),
 				Undefined(env()->isolate())
@@ -577,7 +539,7 @@ void TLSCallbacks::ClearOut(const ExtraInfo * extraInfo) {
 		}
 		else {
 		  Local<Value> argv[] = {
-			Integer::New(read, node_isolate),
+			Integer::New(env()->isolate(), read),
 			Buffer::New(env(), out, read)
 		  };
 		  wrap()->MakeCallback(env()->onread_string(), ARRAY_SIZE(argv), argv);
@@ -585,7 +547,6 @@ void TLSCallbacks::ClearOut(const ExtraInfo * extraInfo) {
     }
   } while (read > 0);
 
->>>>>>> a963b2a... Add DTLS support
   if (read == -1) {
     int err;
     Local<Value> arg = GetSSLError(read, &err, NULL);
@@ -606,8 +567,7 @@ void TLSCallbacks::ClearOut(const ExtraInfo * extraInfo) {
 }
 
 Handle<Object> TLSCallbacks::Self() {
-	wrap()->GetHandle()->type;
-	return Handle<Object>();
+	return wrap()->object();
 }
 
 
@@ -790,7 +750,7 @@ void TLSCallbacks::DoRecv(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, 
 
 	Local<Object> wrap_obj = wrap()->object();
 	Local<Value> argv[] = {
-		Integer::New(nread, node_isolate),
+		Integer::New(env()->isolate(), nread),
 		wrap_obj,
 		Undefined(env()->isolate()),
 		Undefined(env()->isolate())
@@ -826,7 +786,7 @@ void TLSCallbacks::DoRecv(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, 
     return hello_parser_.Parse(data, avail);
   }
 
-  ExtraInfo extraInfo = { addr };
+  ExtraInfo extraInfo = {.addr = addr};
 
   // Cycle OpenSSL's state
   Cycle(&extraInfo);
@@ -834,7 +794,7 @@ void TLSCallbacks::DoRecv(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, 
 
 int TLSCallbacks::DoSend(SendWrap* s, uv_udp_t* handle, uv_buf_t* bufs, size_t count, const struct sockaddr* addr, uv_udp_send_cb cb) 
 {
-  ExtraInfo extraInfo = { addr };
+  ExtraInfo extraInfo = { .addr = addr };
 
   // Queue callback to execute it on next tick
   SendItem* si = new SendItem(s, cb);
@@ -890,7 +850,7 @@ int TLSCallbacks::DoSend(SendWrap* s, uv_udp_t* handle, uv_buf_t* bufs, size_t c
     int err;
     HandleScope handle_scope(env()->isolate());
     Context::Scope context_scope(env()->context());
-    Handle<Value> arg = GetSSLError(written, &err);
+    Handle<Value> arg = GetSSLError(written, &err, NULL);
     if (!arg.IsEmpty()) {
       MakeCallback(env()->onerror_string(), 1, &arg);
       return -1;
@@ -911,8 +871,7 @@ int TLSCallbacks::DoShutdown(ShutdownWrap* req_wrap, uv_shutdown_cb cb) {
   if (SSL_shutdown(ssl_) == 0)
     SSL_shutdown(ssl_);
   shutdown_ = true;
-  EncOut();    
-
+  EncOut();
   return WrapCallbacks::DoShutdown(req_wrap, cb);
 }
 

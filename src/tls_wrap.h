@@ -49,7 +49,6 @@ class TLSCallbacks : public crypto::SSLWrap<TLSCallbacks>,
                      public WrapCallbacks,
                      public AsyncWrap {
  public:
-  ~TLSCallbacks();
 
   static void Initialize(v8::Handle<v8::Object> target,
                          v8::Handle<v8::Value> unused,
@@ -83,16 +82,12 @@ class TLSCallbacks : public crypto::SSLWrap<TLSCallbacks>,
               uv_handle_type pending);
   int DoShutdown(ShutdownWrap* req_wrap, uv_shutdown_cb cb);
 
-<<<<<<< HEAD
   void NewSessionDoneCb();
-=======
-v8::Handle<v8::Object> Self();
->>>>>>> a963b2a... Add DTLS support
+  v8::Handle<v8::Object> Self();
 
  protected:
   static const int kClearOutChunkSize = 1024;
 
-<<<<<<< HEAD
   // Maximum number of bytes for hello parser
   static const int kMaxHelloLength = 16384;
 
@@ -102,8 +97,6 @@ v8::Handle<v8::Object> Self();
   // Maximum number of buffers passed to uv_write()
   static const int kSimultaneousBufferCount = 10;
 
-=======
->>>>>>> a963b2a... Add DTLS support
   // Write callback queue's item
   class WriteItem {
    public:
@@ -142,31 +135,10 @@ v8::Handle<v8::Object> Self();
   TLSCallbacks(Environment* env,
                Kind kind,
                v8::Handle<v8::Object> sc,
-<<<<<<< HEAD
-               StreamWrapCallbacks* old);
-
-  static void SSLInfoCallback(const SSL* ssl_, int where, int ret);
-  void InitSSL();
-  void EncOut();
-  static void EncOutCb(uv_write_t* req, int status);
-  bool ClearIn();
-  void ClearOut();
-  void MakePending();
-  bool InvokeQueued(int status);
-
-  inline void Cycle() {
-    // Prevent recursion
-    if (++cycle_depth_ > 1)
-      return;
-
-    for (; cycle_depth_ > 0; cycle_depth_--) {
-      ClearIn();
-      ClearOut();
-      EncOut();
-    }
-=======
                WrapCallbacks* old, bool isstream);
   ~TLSCallbacks();
+
+  void MakePending();
 
   static void SSLInfoCallback(const SSL* ssl_, int where, int ret);
   void InitSSL();
@@ -178,13 +150,18 @@ v8::Handle<v8::Object> Self();
 
   bool ClearIn(const ExtraInfo * extraInfo = NULL);
   void ClearOut(const ExtraInfo * extraInfo = NULL);
-  void InvokeQueued(int status);
+  bool InvokeQueued(int status);
 
   inline void Cycle(const ExtraInfo * extraInfo = NULL) {
-    ClearIn(extraInfo);
-    ClearOut(extraInfo);
-    EncOut(extraInfo);
->>>>>>> a963b2a... Add DTLS support
+    // Prevent recursion
+    if (++cycle_depth_ > 1)
+      return;
+
+    for (; cycle_depth_ > 0; cycle_depth_--) {
+      ClearIn(extraInfo);
+      ClearOut(extraInfo);
+      EncOut(extraInfo);
+    }
   }
 
   v8::Local<v8::Value> GetSSLError(int status, int* err, const char** msg);
@@ -223,16 +200,13 @@ v8::Handle<v8::Object> Self();
   bool started_;
   bool established_;
   bool shutdown_;
-<<<<<<< HEAD
   const char* error_;
   int cycle_depth_;
 
   // If true - delivered EOF to the js-land, either after `close_notify`, or
   // after the `UV_EOF` on socket.
   bool eof_;
-=======
   bool isstream_;
->>>>>>> a963b2a... Add DTLS support
 
 #ifdef SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
   v8::Persistent<v8::Value> sni_context_;

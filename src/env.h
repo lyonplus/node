@@ -224,6 +224,7 @@ namespace node {
   V(tls_sni_string, "tls_sni")                                                \
   V(tls_string, "tls")                                                        \
   V(tls_ticket_string, "tlsTicket")                                           \
+  V(dtls_string, "dtls")                                                      \
   V(total_heap_size_executable_string, "total_heap_size_executable")          \
   V(total_heap_size_string, "total_heap_size")                                \
   V(total_physical_size_string, "total_physical_size")                        \

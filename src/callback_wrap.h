@@ -31,9 +31,8 @@
 
 namespace node {
 
-typedef class ReqWrap<uv_shutdown_t> ShutdownWrap;
-
 class SendWrap;
+class ShutdownWrap;
 class WriteWrap;
 
 

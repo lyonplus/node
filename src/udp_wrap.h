@@ -85,10 +85,7 @@ class UDPWrap: public HandleWrap {
   static void SetBroadcast(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void SetTTL(const v8::FunctionCallbackInfo<v8::Value>& args);
 
-<<<<<<< HEAD
-  static v8::Local<v8::Object> Instantiate(Environment* env, AsyncWrap* parent);
-=======
-  void OverrideCallbacks(WrapCallbacks* callbacks) {
+  void OverrideCallbacks(WrapCallbacks* callbacks, bool gc) {
     UDPWrapCallbacks* old = callbacks_;
     callbacks_ = reinterpret_cast<UDPWrapCallbacks*>(callbacks);
     if (old != &default_callbacks_)
@@ -99,8 +96,8 @@ class UDPWrap: public HandleWrap {
     return callbacks_;
   }
 
+  static v8::Local<v8::Object> Instantiate(Environment* env, AsyncWrap* parent);
   static v8::Local<v8::Object> Instantiate(Environment* env);
->>>>>>> a963b2a... Add DTLS support
   uv_udp_t* UVHandle();
 
  private:

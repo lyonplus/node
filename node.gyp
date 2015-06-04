@@ -28,7 +28,7 @@
       'lib/dgram.js',
       'lib/dns.js',
       'lib/domain.js',
-      #'lib/dtls.js',
+      'lib/dtls.js',
       'lib/_dtls_wrap.js',
       'lib/events.js',
       'lib/freelist.js',
@@ -60,11 +60,7 @@
       'lib/sys.js',
       'lib/timers.js',
       'lib/tls.js',
-<<<<<<< HEAD
       'lib/_tls_common.js',
-=======
-	  'lib/_tls_common.js',
->>>>>>> a963b2a... Add DTLS support
       'lib/_tls_legacy.js',
       'lib/_tls_wrap.js',
       'lib/tty.js',

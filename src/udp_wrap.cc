@@ -75,7 +75,6 @@ inline bool SendWrap::have_callback() const {
 }
 
 
-<<<<<<< HEAD
 static void NewSendWrap(const FunctionCallbackInfo<Value>& args) {
   assert(args.IsConstructCall());
 }
@@ -85,14 +84,9 @@ UDPWrap::UDPWrap(Environment* env, Handle<Object> object, AsyncWrap* parent)
     : HandleWrap(env,
                  object,
                  reinterpret_cast<uv_handle_t*>(&handle_),
-                 AsyncWrap::PROVIDER_UDPWRAP) {
-=======
-UDPWrap::UDPWrap(Environment* env, Handle<Object> object)
-    : HandleWrap(env, object, reinterpret_cast<uv_handle_t*>(&handle_)), 
+                 AsyncWrap::PROVIDER_UDPWRAP),
       default_callbacks_(this),
       callbacks_(&default_callbacks_) {
-
->>>>>>> a963b2a... Add DTLS support
   int r = uv_udp_init(env->event_loop(), &handle_);
   assert(r == 0);  // can't fail anyway
 }
@@ -144,9 +138,8 @@ void UDPWrap::Initialize(Handle<Object> target,
   NODE_SET_PROTOTYPE_METHOD(t, "ref", HandleWrap::Ref);
   NODE_SET_PROTOTYPE_METHOD(t, "unref", HandleWrap::Unref);
 
-<<<<<<< HEAD
   target->Set(FIXED_ONE_BYTE_STRING(env->isolate(), "UDP"), t->GetFunction());
-  env->set_udp_constructor_function(t->GetFunction());
+  env->set_udp_constructor_template(t);
 
   // Create FunctionTemplate for SendWrap
   Local<FunctionTemplate> swt =
@@ -155,13 +148,6 @@ void UDPWrap::Initialize(Handle<Object> target,
   swt->SetClassName(FIXED_ONE_BYTE_STRING(env->isolate(), "SendWrap"));
   target->Set(FIXED_ONE_BYTE_STRING(env->isolate(), "SendWrap"),
               swt->GetFunction());
-=======
-
-  AsyncWrap::AddMethods<UDPWrap>(t);
-
-  target->Set(FIXED_ONE_BYTE_STRING(node_isolate, "UDP"), t->GetFunction());
-  env->set_udp_constructor_template(t);
->>>>>>> a963b2a... Add DTLS support
 }
 
 
@@ -431,34 +417,6 @@ void UDPWrap::OnRecv(uv_udp_t* handle,
                      const uv_buf_t* buf,
                      const struct sockaddr* addr,
                      unsigned int flags) {
-<<<<<<< HEAD
-  if (nread == 0 && addr == NULL) {
-    if (buf->base != NULL)
-      free(buf->base);
-    return;
-  }
-
-  UDPWrap* wrap = static_cast<UDPWrap*>(handle->data);
-  Environment* env = wrap->env();
-
-  HandleScope handle_scope(env->isolate());
-  Context::Scope context_scope(env->context());
-
-  Local<Object> wrap_obj = wrap->object();
-  Local<Value> argv[] = {
-    Integer::New(env->isolate(), nread),
-    wrap_obj,
-    Undefined(env->isolate()),
-    Undefined(env->isolate())
-  };
-
-  if (nread < 0) {
-    if (buf->base != NULL)
-      free(buf->base);
-    wrap->MakeCallback(env->onmessage_string(), ARRAY_SIZE(argv), argv);
-    return;
-=======
-
   UDPWrap* wrap = static_cast<UDPWrap*>(handle->data);
 
   // We should not be getting this callback if someone as already called
@@ -467,34 +425,19 @@ void UDPWrap::OnRecv(uv_udp_t* handle,
 
   if (nread > 0) {
 	//NODE_COUNT_UDP_BYTES_RECV(nread);
->>>>>>> a963b2a... Add DTLS support
   }
 
   wrap->callbacks()->DoRecv(handle, nread, buf, addr, flags);
 }
 
 
-<<<<<<< HEAD
 Local<Object> UDPWrap::Instantiate(Environment* env, AsyncWrap* parent) {
   // If this assert fires then Initialize hasn't been called yet.
-  assert(env->udp_constructor_function().IsEmpty() == false);
+  assert(env->tcp_constructor_template().IsEmpty() == false);
+  Local<Function> constructor = env->udp_constructor_template()->GetFunction();
   EscapableHandleScope scope(env->isolate());
   Local<Value> ptr = External::New(env->isolate(), parent);
-  return scope.Escape(env->udp_constructor_function()->NewInstance(1, &ptr));
-}
-=======
-Local<Object> UDPWrap::Instantiate(Environment* env) {
-	HandleScope handle_scope(env->isolate());
-
-	// If this assert fires then Initialize hasn't been called yet.
-	assert(env->tcp_constructor_template().IsEmpty() == false);
->>>>>>> a963b2a... Add DTLS support
-
-	Local<Function> constructor = env->tcp_constructor_template()->GetFunction();
-	assert(constructor.IsEmpty() == false);
-	Local<Object> instance = constructor->NewInstance();
-	assert(instance.IsEmpty() == false);
-	return handle_scope.Close(instance);
+  return scope.Escape(constructor->NewInstance(1, &ptr));
 }
 
 uv_udp_t* UDPWrap::UVHandle() {
@@ -517,7 +460,7 @@ void UDPWrapCallbacks::DoRecv(uv_udp_t* handle, ssize_t nread, const uv_buf_t* b
 
 	Local<Object> wrap_obj = wrap->object();
 	Local<Value> argv[] = {
-	Integer::New(nread, node_isolate),
+	Integer::New(env->isolate(), nread),
 	wrap_obj,
 	Undefined(env->isolate()),
 	Undefined(env->isolate())

@@ -2448,14 +2448,10 @@ static Handle<Object> GetFeatures(Environment* env) {
   obj->Set(env->tls_string(),
            Boolean::New(env->isolate(), get_builtin_module("crypto") != NULL));
 
-<<<<<<< HEAD
-  return scope.Escape(obj);
-=======
-  obj->Set(FIXED_ONE_BYTE_STRING(node_isolate, "dtls"),
-           Boolean::New(get_builtin_module("crypto") != NULL));
+  obj->Set(env->dtls_string(),
+           Boolean::New(env->isolate(), get_builtin_module("crypto") != NULL));
 
-  return scope.Close(obj);
->>>>>>> a963b2a... Add DTLS support
+  return scope.Escape(obj);
 }
 
 

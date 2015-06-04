@@ -122,20 +122,14 @@ class StreamWrapCallbacks : public WrapCallbacks {
 
 class StreamWrap : public HandleWrap {
  public:
-<<<<<<< HEAD
   static void Initialize(v8::Handle<v8::Object> target,
                          v8::Handle<v8::Value> unused,
                          v8::Handle<v8::Context> context);
 
-  void OverrideCallbacks(StreamWrapCallbacks* callbacks, bool gc) {
-    StreamWrapCallbacks* old = callbacks_;
-    callbacks_ = callbacks;
-    callbacks_gc_ = gc;
-=======
-  void OverrideCallbacks(WrapCallbacks* callbacks) {
+  void OverrideCallbacks(WrapCallbacks* callbacks, bool gc) {
     StreamWrapCallbacks* old = callbacks_;
     callbacks_ = reinterpret_cast<StreamWrapCallbacks *>(callbacks);
->>>>>>> a963b2a... Add DTLS support
+    callbacks_gc_ = gc;
     if (old != &default_callbacks_)
       delete old;
   }
