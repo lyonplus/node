@@ -4,14 +4,14 @@ var fs = require('fs');
 debugger;
 
 var options = {
-  key: fs.readFileSync('c:\\temp\\dtls-key.pem'),
-  cert: fs.readFileSync('c:\\temp\\dtls-cert-self-signed.pem'),
+  key: fs.readFileSync('/Users/liachen/work/certs/server.key'),
+  cert: fs.readFileSync('/Users/liachen/work/certs/server.pem'),
 
   // This is necessary only if using the client certificate authentication.
   //requestCert: true,
 
   // This is necessary only if the client uses the self-signed certificate.
-  //ca: [ fs.readFileSync('client-cert.pem') ]
+  //ca: [ fs.readFileSync('~/work/certs/client.pem') ]
 };
 
 var server = tls.createServer(options, function(cleartextStream) {
